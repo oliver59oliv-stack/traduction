@@ -42,9 +42,11 @@ export default function App() {
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // JSON Import Page states (Used purely for pasting the generated JSON)
+  // JSON Import Page states
   const [rawJson, setRawJson] = useState(() => {
-    return localStorage.getItem("lughati_paste_json") || "";
+    const saved = localStorage.getItem("lughati_raw_json");
+    if (saved === FIXED_JSON_TEMPLATE) return "";
+    return saved || "";
   });
 
   const [jsonError, setJsonError] = useState<string | null>(null);
@@ -146,7 +148,7 @@ export default function App() {
 
   const handleRawJsonChange = (val: string) => {
     setRawJson(val);
-    localStorage.setItem("lughati_paste_json", val);
+    localStorage.setItem("lughati_raw_json", val);
   };
 
   // Copy raw JSON structure and custom instructions to clipboard together for presentation to AI
@@ -365,55 +367,31 @@ export default function App() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start" dir="ltr">
               
-              {/* Left Column: AI Prompt & Static Templates */}
-              <div className="space-y-4 font-sans">
-                
-                <div className="space-y-1.5">
-                  <span className="text-xs font-bold text-zinc-400 block">Instructions pour l'IA (Consigne) :</span>
-                  <div className="w-full p-4 bg-[#f06a22]/5 text-[#f06a22] font-semibold text-xs leading-relaxed rounded-xl border border-dashed border-[1.5px] border-[#da5a22]/70 whitespace-pre-wrap select-text">
-                    {FIXED_INSTRUCTIONS}
-                  </div>
-                </div>
+              {/* Left Column: Dark gray JSON Textarea */}
+              <div className="space-y-3">
 
-                <div className="space-y-1.5">
-                  <span className="text-xs font-bold text-zinc-400 block">Modèle de structure requis (JSON) :</span>
-                  <pre className="w-full p-4 bg-[#111218] text-[#eceff4] font-mono text-xs leading-relaxed rounded-xl border border-[#222435] shadow-inner overflow-x-auto whitespace-pre select-text">
-                    {FIXED_JSON_TEMPLATE}
-                  </pre>
-                </div>
-
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={handleCopyJson}
-                    className="w-full bg-[#007fff] hover:bg-[#0070df] text-white py-3 px-4 rounded-xl text-xs font-bold font-sans transition-all active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5 shadow-md font-sans"
-                  >
-                    <Clipboard className="w-3.5 h-3.5" />
-                    <span>{copyFeedback ? "Copié !" : "Copier le prompt et le modèle"}</span>
-                  </button>
-                </div>
-
-              </div>
-
-              {/* Right Column: Paste & Import Zone */}
-              <div className="space-y-3 font-sans">
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-zinc-400 block">Coller le JSON généré par l'IA ici :</span>
-                  <span className="text-[10px] text-emerald-500 font-bold font-mono">Prêt pour l'import</span>
-                </div>
-                
                 <textarea
                   ref={rawJsonRef}
                   value={rawJson}
                   onChange={(e) => handleRawJsonChange(e.target.value)}
                   dir="ltr"
-                  className="w-full min-h-[160px] p-4 bg-[#0d0e12] text-zinc-300 font-mono text-xs leading-relaxed rounded-xl border border-[#222435] focus:outline-none focus:ring-1 focus:ring-emerald-500/50 shadow-inner resize-none overflow-y-hidden select-text placeholder:text-zinc-600"
-                  placeholder={`Collez l'un ou l'autre format JSON ici pour importer... Ex:
-[
-  {"word": "ordinateur", "translation": "حاسوب"}
+                  className="w-full min-h-[160px] p-4 bg-[#111218] text-[#eceff4] placeholder:text-zinc-500 font-mono text-xs leading-relaxed rounded-xl border border-[#222435] focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner resize-none overflow-y-hidden select-text"
+                  placeholder={`[
+  {"word": "le mot français", "translation": "الترجمة بالعربية"},
+  ...
 ]`}
                 />
+              </div>
+
+              {/* Right Column: Read-only Instructions & Structure Template + Buttons */}
+              <div className="space-y-3 font-sans">
+                
+
+
+                {/* Read-only Instructions Box (Plain text appearance) */}
+                <div className="w-full p-4 bg-[#f06a22]/5 text-[#f06a22] font-semibold text-xs leading-relaxed rounded-xl border border-dashed border-[1.5px] border-[#da5a22]/70 whitespace-pre-wrap select-text">
+                  {FIXED_INSTRUCTIONS}
+                </div>
 
                 {/* Submitting error display */}
                 {jsonError && (
@@ -422,11 +400,24 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="pt-1">
+                {/* Side-by-side action buttons */}
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                  
+                  {/* Left copier button */}
+                  <button
+                    type="button"
+                    onClick={handleCopyJson}
+                    className="w-full bg-[#007fff] hover:bg-[#0070df] text-white py-3 px-4 rounded-xl text-xs font-bold font-sans transition-all active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                  >
+                    <Clipboard className="w-3.5 h-3.5" />
+                    <span>{copyFeedback ? "copié !" : "copier"}</span>
+                  </button>
+
+                  {/* Right Envoyer button */}
                   <button
                     type="button"
                     onClick={handleImportJsonSubmit}
-                    disabled={loading || !rawJson.trim()}
+                    disabled={loading || !rawJson.trim() || rawJson === FIXED_JSON_TEMPLATE}
                     className="w-full bg-[#1ea955] hover:bg-[#198d47] disabled:bg-[#16171d] disabled:text-zinc-600 disabled:border-zinc-800 text-white py-3 px-4 rounded-xl text-xs font-bold font-sans transition-all active:scale-95 text-center cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
                   >
                     {loading ? (
@@ -434,8 +425,9 @@ export default function App() {
                     ) : (
                       <UploadCloud className="w-3.5 h-3.5" />
                     )}
-                    <span>Importer dans le dictionnaire</span>
+                    <span>Envoyer</span>
                   </button>
+
                 </div>
 
               </div>
